@@ -1,0 +1,12 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportHeight="36.0"
+    android:viewportWidth="36.0">
+    <path
+        android:fillColor="@color/bg_size_color"
+        android:pathData="M21.3,5.5h-13c-1.6,0 -2.8,1.3 -2.8,2.8v13c0,1.6 1.3,2.8 2.8,2.8h13c1.6,0 2.8,-1.3 2.8,-2.8v-13C24.1,6.8 22.8,5.5 21.3,5.5z" />
+    <path
+        android:fillColor="@color/radiobutton_color_selected"
+        android:pathData="M14.8,14.8m-5.7,0a5.7,5.7 0,1 1,11.4 0a5.7,5.7 0,1 1,-11.4 0" />
+</vector>

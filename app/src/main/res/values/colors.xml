@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#3F51B5</color>
+    <color name="colorPrimaryDark">#303F9F</color>
+    <color name="colorAccent">#FF4081</color>
+    <color name="radiobutton_color_selected">#FFFFFF</color>
+    <color name="radiobutton_color_unselected">#777777</color>
+    <color name="select_bg_color">#1E1E1E</color>
+    <color name="main_bg_color">#262626</color>
+    <color name="bg_size_color">#00000000</color>
+    <color name="paint_color1">#FF0000</color>
+    <color name="paint_color1_unselected">#880000</color>
+    <color name="paint_color2">#FFFF00</color>
+    <color name="paint_color2_unselected">#888800</color>
+    <color name="paint_color3">#00DD00</color>
+    <color name="paint_color3_unselected">#008800</color>
+    <color name="paint_color4">#0044BB</color>
+    <color name="paint_color4_unselected">#003377</color>
+    <color name="paint_color5">#FFFFFF</color>
+    <color name="paint_color5_unselected">#777777</color>
+</resources>

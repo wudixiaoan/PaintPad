@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">PaintPad</string>
+    <string name="drop">Drop</string>
+    <string name="save">Save</string>
+</resources>
