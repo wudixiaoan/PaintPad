@@ -30,6 +30,7 @@ public class PaintPadActivity extends Activity {
     private Drawing mDrawing;
     private Paint mPaint;
     private DrawingFactory mDrawingFactory;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -67,7 +68,7 @@ public class PaintPadActivity extends Activity {
         btnSave.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                //mPaintPad.save();
+                mPaintPad.saveToSdcard();
             }
         });
     }
@@ -149,6 +150,7 @@ public class PaintPadActivity extends Activity {
             }
         });
     }
+
     /**
      * Set the default drawing
      */
@@ -156,6 +158,8 @@ public class PaintPadActivity extends Activity {
         mDrawingFactory = new DrawingFactory();
         mDrawing = mDrawingFactory.createDrawing(DrawingId.DRAWING_PATHLINE);
         mPaintPad.setDrawing(mDrawing);
+        //mPaintPad.setBackgroundResource(R.drawable.screenshot);
+        //mPaintPad.setSrcPath(BitmapFactory.decodeResource(R.drawable.screenshot,));
         resetBrush();
         setBrushSize(Brush.PAINT_SIZE_SMALL);
         setBrushColor(getResources().getColor(R.color.paint_color1));
@@ -169,15 +173,15 @@ public class PaintPadActivity extends Activity {
         }
     }
 
-    private void setBrushColor(int color){
+    private void setBrushColor(int color) {
         Brush.getPen().setColor(color);
     }
 
-    private void setBrushSize(int size){
+    private void setBrushSize(int size) {
         Brush.getPen().setStrokeWidth(size);
     }
 
-    private void resetBrush(){
+    private void resetBrush() {
         Brush.getPen().reset();
     }
 }

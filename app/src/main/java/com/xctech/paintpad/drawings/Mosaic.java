@@ -4,28 +4,21 @@ package com.xctech.paintpad.drawings;
  * Created by an.pan on 2017/5/5.
  */
 
-import android.graphics.Bitmap;
 import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.CornerPathEffect;
-import android.graphics.Paint;
-import android.graphics.Path;
-import android.graphics.PorterDuffXfermode;
-
-import com.xctech.paintpad.tools.Brush;
 
 /**
  * Track the finger's movement on the screen.
  */
 public class Mosaic extends Drawing {
-    private Path mPath = null;
-    private Bitmap bmMosaicLayer;
-    private float mX, mY;
 
     @Override
     public void draw(Canvas canvas) {
-        canvas.drawPath(this.mPath, Brush.getPen());
+        //canvas.drawPath(this.mPath, Brush.getPen());
     }
+    /*private Path mPath = null;
+    private Bitmap bmMosaicLayer;
+    private float mX, mY;
+
 
     @Override
     public void fingerDown(float x, float y, Canvas canvas) {
@@ -91,5 +84,5 @@ public class Mosaic extends Drawing {
 
         bmTouchLayer.recycle();
         Log.d(TAG, "updatePathMosaic " + (System.currentTimeMillis() - time));
-    }
+    }*/
 }

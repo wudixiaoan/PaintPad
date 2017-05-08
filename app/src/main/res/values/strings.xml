@@ -2,4 +2,6 @@
     <string name="app_name">PaintPad</string>
     <string name="drop">Drop</string>
     <string name="save">Save</string>
+    <string name="tip_save_to">Save to </string>
+    <string name="tip_sava_failed">Save fail </string>
 </resources>

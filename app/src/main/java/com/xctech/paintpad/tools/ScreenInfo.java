@@ -46,4 +46,12 @@ public class ScreenInfo {
     public int getHeightPixels() {
         return mHeightPixels;
     }
+
+    @Override
+    public String toString() {
+        return "ScreenInfo{" +
+                "mWidthPixels=" + mWidthPixels +
+                ", mHeightPixels=" + mHeightPixels +
+                '}';
+    }
 }

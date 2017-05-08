@@ -17,7 +17,7 @@ public class DrawingFactory {
                 mDrawing = new PathLine();
                 break;
             case DrawingId.DRAWING_STRAIGHTLINE:
-                mDrawing = new StraightLine();
+                mDrawing = new Arrow();
                 break;
             case DrawingId.DRAWING_RECT:
                 mDrawing = new Rect();
