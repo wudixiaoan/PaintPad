@@ -11,4 +11,7 @@ public class DrawingId {
     public static final int DRAWING_CIRCLE = 4;
     public static final int DRAWING_POINTS = 5;
     public static final int DRAWING_ERASER = 6;
+    public static final int DRAWING_ARROW = 7;
+    public static final int DRAWING_MOSAIC = 8;
+    public static final int DRAWING_PATHMOSAIC = 9;
 }

@@ -13,7 +13,7 @@ import com.xctech.paintpad.tools.Brush;
  * A straight line.
  */
 public class Arrow extends Drawing {
-    Path triangle;
+    private Path triangle;
 
     public Arrow() {
         triangle = new Path();

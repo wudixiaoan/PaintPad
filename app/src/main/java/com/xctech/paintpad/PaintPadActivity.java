@@ -1,9 +1,8 @@
 package com.xctech.paintpad;
 
 import android.app.Activity;
-import android.content.Context;
-import android.graphics.Paint;
 import android.os.Bundle;
+import android.os.Environment;
 import android.view.View;
 import android.widget.Button;
 import android.widget.RadioGroup;
@@ -26,9 +25,8 @@ public class PaintPadActivity extends Activity {
     private Button btnDrop, btnSave;
 
     private PaintPad mPaintPad;
-    private Context mContext;
+    private MosaicView mMosaicView;
     private Drawing mDrawing;
-    private Paint mPaint;
     private DrawingFactory mDrawingFactory;
 
     @Override
@@ -75,6 +73,7 @@ public class PaintPadActivity extends Activity {
 
     private void initSelectPad() {
         mPaintPad = (PaintPad) findViewById(R.id.main_pad);
+        mMosaicView = (MosaicView) findViewById(R.id.mosaic_main_pad);
         mRadioGroupSize = (RadioGroup) findViewById(R.id.radio_size);
         mRadioGroupColor = (RadioGroup) findViewById(R.id.radio_color);
         mRadioGroupMode = (RadioGroup) findViewById(R.id.radio_mode);
@@ -140,10 +139,10 @@ public class PaintPadActivity extends Activity {
                         paintMode = DrawingId.DRAWING_CIRCLE;
                         break;
                     case R.id.arrowbtn:
-                        paintMode = DrawingId.DRAWING_STRAIGHTLINE;
+                        paintMode = DrawingId.DRAWING_ARROW;
                         break;
                     case R.id.mosaicbtn:
-                        paintMode = DrawingId.DRAWING_OVAL;
+                        paintMode = DrawingId.DRAWING_PATHMOSAIC;
                         break;
                 }
                 setWhatToDraw(paintMode);
@@ -157,9 +156,8 @@ public class PaintPadActivity extends Activity {
     private void setDefaultDrawing() {
         mDrawingFactory = new DrawingFactory();
         mDrawing = mDrawingFactory.createDrawing(DrawingId.DRAWING_PATHLINE);
-        mPaintPad.setDrawing(mDrawing);
-        //mPaintPad.setBackgroundResource(R.drawable.screenshot);
-        //mPaintPad.setSrcPath(BitmapFactory.decodeResource(R.drawable.screenshot,));
+        mPaintPad.setDrawing(mDrawing, DrawingId.DRAWING_PATHLINE);
+        mPaintPad.setSrcPath(Environment.getExternalStorageDirectory() + "/Screenshot.png");
         resetBrush();
         setBrushSize(Brush.PAINT_SIZE_SMALL);
         setBrushColor(getResources().getColor(R.color.paint_color1));
@@ -167,9 +165,16 @@ public class PaintPadActivity extends Activity {
 
     private void setWhatToDraw(int which) {
         mDrawing = mDrawingFactory.createDrawing(which);
-
+        if (which == DrawingId.DRAWING_PATHMOSAIC) {
+            mPaintPad.setVisibility(View.GONE);
+            mMosaicView.setVisibility(View.VISIBLE);
+            return;
+        }else{
+            mPaintPad.setVisibility(View.VISIBLE);
+            mMosaicView.setVisibility(View.GONE);
+        }
         if (mDrawing != null) {
-            mPaintPad.setDrawing(mDrawing);
+            mPaintPad.setDrawing(mDrawing, which);
         }
     }
 
@@ -178,7 +183,7 @@ public class PaintPadActivity extends Activity {
     }
 
     private void setBrushSize(int size) {
-        Brush.getPen().setStrokeWidth(size);
+        Brush.getPen().setBrushSize(size);
     }
 
     private void resetBrush() {

@@ -4,21 +4,23 @@ package com.xctech.paintpad;
  * Created by an.pan on 2017/5/5.
  */
 
-import android.app.Activity;
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Rect;
 import android.os.Environment;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Toast;
 
 import com.xctech.paintpad.drawings.Drawing;
-import com.xctech.paintpad.tools.ScreenInfo;
+import com.xctech.paintpad.drawings.DrawingId;
+import com.xctech.paintpad.tools.BitmapUtil;
+import com.xctech.paintpad.tools.Brush;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -31,7 +33,7 @@ import java.util.Date;
  * This is our main View class.
  */
 public class PaintPad extends View {
-    private float tempX, tempY;
+    private float tempX, tempY, startX, startY;
     private Bitmap mBitmap = null;
     private Canvas mCanvas = null;
     private boolean isMoving = false;
@@ -39,14 +41,16 @@ public class PaintPad extends View {
     private int bgColor;
 
     private Context mContext;
+    private static int mMode = DrawingId.DRAWING_PATHLINE;
 
     /**
      * Set the shape that is drawing.
      *
      * @param drawing Which shape to drawing current.
      */
-    public void setDrawing(Drawing drawing) {
+    public void setDrawing(Drawing drawing, int mode) {
         this.mDrawing = drawing;
+        this.mMode = mode;
     }
 
     public PaintPad(Context context, AttributeSet attrs) {
@@ -63,16 +67,18 @@ public class PaintPad extends View {
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
-
-        ScreenInfo screenInfo = new ScreenInfo((Activity) mContext);
-
+        mImageRect = new Rect();
+        mPadding = BitmapUtil.dp2px(6, mContext);
         /**
          * Create a bitmap with the size of the screen.
          */
         /*mBitmap = Bitmap.createBitmap(screenInfo.getWidthPixels(),
                 screenInfo.getHeightPixels(), Bitmap.Config.ARGB_8888);*/
-        Bitmap bgBitmap = BitmapFactory.decodeResource(getContext().getResources(), R.drawable.screenshot).copy(Bitmap.Config.ARGB_8888, true);
-        mBitmap = Bitmap.createBitmap(bgBitmap, 0, 0, screenInfo.getWidthPixels(), screenInfo.getHeightPixels());
+        //Bitmap bgBitmap = BitmapFactory.decodeResource(getContext().getResources(), R.drawable.screenshot).copy(Bitmap.Config.ARGB_8888, true);
+        //mBitmap = Bitmap.createBitmap(bgBitmap, 0, 0, screenInfo.getWidthPixels(), screenInfo.getHeightPixels());
+        /*
+        * mCanvas 提供给手指滑动的画布
+        * */
         mCanvas = new Canvas(this.mBitmap);
         mCanvas.drawColor(Color.TRANSPARENT);
     }
@@ -82,11 +88,19 @@ public class PaintPad extends View {
         super.onDraw(canvas);
 
         // Draw the bitmap
-        canvas.drawBitmap(mBitmap, 0, 0, new Paint(Paint.DITHER_FLAG));
-
+        //canvas.drawBitmap(mBitmap, 0, 0, new Paint(Paint.DITHER_FLAG));
+        /*
+        * canvas 显示变化的画布
+        * */
+        canvas.drawBitmap(mBitmap, null, mImageRect, new Paint(Paint.DITHER_FLAG));
         // Call the drawing's draw() method.
         if (mDrawing != null && this.isMoving == true) {
-            mDrawing.draw(canvas);
+            if (mMode == DrawingId.DRAWING_PATHLINE) {
+                mDrawing.draw(mCanvas);
+            } else {
+                mDrawing.draw(canvas);
+            }
+            //mDrawing.pathDraw(canvas, mImageRect, mImageHeight, mImageWidth);
         }
     }
 
@@ -94,17 +108,41 @@ public class PaintPad extends View {
     public boolean onTouchEvent(MotionEvent event) {
         float x = event.getX();
         float y = event.getY();
+        /*if (startX < mImageRect.left || startX > mImageRect.right || startY < mImageRect.top
+                || startY > mImageRect.bottom) {
+            return true;
+        }*/
+
+        /*if (x < mImageRect.left || x > mImageRect.right || y < mImageRect.top
+                || y > mImageRect.bottom) {
+            return true;
+        }
+
+        float ratio = (mImageRect.right - mImageRect.left)
+                / (float) mImageWidth;
+        x = (int) ((x - mImageRect.left) / ratio);
+        y = (int) ((y - mImageRect.top) / ratio);*/
 
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
+                startX = x;
+                startY = y;
                 fingerDown(x, y);
                 reDraw();
                 break;
             case MotionEvent.ACTION_MOVE:
+                if (startX < mImageRect.left || startX > mImageRect.right || startY < mImageRect.top
+                        || startY > mImageRect.bottom) {
+                    return true;
+                }
                 fingerMove(x, y);
                 reDraw();
                 break;
             case MotionEvent.ACTION_UP:
+                if (startX < mImageRect.left || startX > mImageRect.right || startY < mImageRect.top
+                        || startY > mImageRect.bottom) {
+                    return true;
+                }
                 fingerUp(x, y);
                 reDraw();
                 break;
@@ -129,8 +167,10 @@ public class PaintPad extends View {
     private void fingerUp(float x, float y) {
         this.tempX = 0;
         this.tempY = 0;
-
-        mDrawing.fingerUp(x, y, mCanvas);
+        if (mMode != DrawingId.DRAWING_PATHLINE) {
+            Brush.recoveryBrushSize();
+        }
+        mDrawing.fingerUpWithRatio(x, y, mCanvas, mImageRect, mImageWidth);
         this.isMoving = false;
     }
 
@@ -144,8 +184,8 @@ public class PaintPad extends View {
         this.tempX = x;
         this.tempY = y;
         this.isMoving = true;
-
-        mDrawing.fingerMove(x, y, mCanvas);
+        //mDrawing.fingerMove(x, y, mCanvas);
+        mDrawing.fingerMoveWithRatio(x, y, mCanvas, mImageRect, mImageWidth);
     }
 
     /**
@@ -156,7 +196,11 @@ public class PaintPad extends View {
      */
     private void fingerDown(float x, float y) {
         this.isMoving = false;
-        mDrawing.fingerDown(x, y, mCanvas);
+        //mDrawing.fingerDown(x, y, mCanvas);
+        if (mMode != DrawingId.DRAWING_PATHLINE) {
+            Brush.ratioBrushSize(mImageRect, mImageWidth);
+        }
+        mDrawing.fingerDownWithRatio(x, y, mCanvas, mImageRect, mImageWidth);
     }
 
     /**
@@ -235,5 +279,106 @@ public class PaintPad extends View {
                             + fullPath, Toast.LENGTH_LONG).show();
             e.printStackTrace();
         }
+    }
+
+    private String inPath;
+    private String outPath;
+
+    private Rect mImageRect;
+    private int mPadding;
+
+    private int mImageWidth;
+    private int mImageHeight;
+
+    public void setSrcPath(String absPath) {
+        File file = new File(absPath);
+        if (file == null || !file.exists()) {
+            Log.w("xxxx", "invalid file path " + absPath);
+            return;
+        }
+        reset();
+        inPath = absPath;
+       /* String fileName = file.getName();
+        String parent = file.getParent();
+        int index = fileName.lastIndexOf(".");
+        String stem = fileName.substring(0, index);
+        String newStem = stem + "_mosaic";
+        fileName = fileName.replace(stem, newStem);
+        outPath = parent + "/" + fileName;*/
+
+        BitmapUtil.Size size = BitmapUtil.getImageSize(inPath);
+        mImageWidth = size.width;
+        mImageHeight = size.height;
+        mBitmap = BitmapUtil.getImage(absPath).copy(Bitmap.Config.ARGB_8888, true);
+
+        requestLayout();
+        invalidate();
+    }
+
+    @Override
+    protected void onLayout(boolean changed, int left, int top, int right,
+                            int bottom) {
+        if (mImageWidth <= 0 || mImageHeight <= 0) {
+            return;
+        }
+
+        int contentWidth = right - left;
+        int contentHeight = bottom - top;
+        int viewWidth = contentWidth - mPadding * 2;
+        int viewHeight = contentHeight - mPadding * 2;
+        float widthRatio = viewWidth / ((float) mImageWidth);
+        float heightRatio = viewHeight / ((float) mImageHeight);
+        float ratio = widthRatio < heightRatio ? widthRatio : heightRatio;
+        int realWidth = (int) (mImageWidth * ratio);
+        int realHeight = (int) (mImageHeight * ratio);
+
+        int imageLeft = (contentWidth - realWidth) / 2;
+        int imageTop = (contentHeight - realHeight) / 2;
+        int imageRight = imageLeft + realWidth;
+        int imageBottom = imageTop + realHeight;
+        mImageRect.set(imageLeft, imageTop, imageRight, imageBottom);
+    }
+
+    private String STORE_ID = "tmp";
+    private String STORE_KEY = "key";
+
+    @Override
+    protected void onWindowVisibilityChanged(int visibility) {
+        super.onWindowVisibilityChanged(visibility);;
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        Log.i("xxxx", "==== onAttachedToWindow ");
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        Log.i("xxxx", "==== onDetachedFromWindow ");
+    }
+
+    @Override
+    public void setVisibility(int visibility) {
+        super.setVisibility(visibility);
+        Log.i("xxxx", "==== visibility = " + visibility);
+        if (visibility == VISIBLE) {
+            Bitmap bitmap = BitmapUtil.getStoreTmpPic(STORE_ID, STORE_KEY, mContext);
+            Log.i("xxxx","visibility = " + visibility + "; b = " + (bitmap != null));
+            if(bitmap != null){
+                //mBitmap = bitmap.copy(Bitmap.Config.ARGB_8888, true);
+                setSrcPath("/data/data/com.xctech.paintpad/files/tmp_key");
+            }
+        } else if (visibility == GONE) {
+            BitmapUtil.storeTmpPic(STORE_ID, STORE_KEY, mBitmap, mContext);
+        }
+    }
+    public boolean reset() {
+        if (mBitmap != null) {
+            mBitmap.recycle();
+            mBitmap = null;
+        }
+        return true;
     }
 }

@@ -20,7 +20,7 @@ public class DrawingFactory {
                 mDrawing = new Arrow();
                 break;
             case DrawingId.DRAWING_RECT:
-                mDrawing = new Rect();
+                mDrawing = new Rectangle();
                 break;
             case DrawingId.DRAWING_OVAL:
                 mDrawing = new Oval();
@@ -33,6 +33,15 @@ public class DrawingFactory {
                 break;
             case DrawingId.DRAWING_ERASER:
                 mDrawing = new Eraser();
+                break;
+            case DrawingId.DRAWING_ARROW:
+                mDrawing = new Arrow();
+                break;
+            case DrawingId.DRAWING_MOSAIC:
+                mDrawing = new Mosaic();
+                break;
+            case DrawingId.DRAWING_PATHMOSAIC:
+                mDrawing = new PathMosaic();
                 break;
         }
 

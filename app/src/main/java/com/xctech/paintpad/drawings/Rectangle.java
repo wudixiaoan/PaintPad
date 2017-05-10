@@ -5,15 +5,17 @@ package com.xctech.paintpad.drawings;
  */
 
 import android.graphics.Canvas;
+import android.util.Log;
 
 import com.xctech.paintpad.tools.Brush;
 
 /**
  * A rectangle.
  */
-public class Rect extends Drawing {
+public class Rectangle extends Drawing {
     @Override
     public void draw(Canvas canvas) {
+        Log.i("xxxx","Rectangle Drawing");
         canvas.drawRect(getStartRectX(), getStartRectY(), getStopRectX(), getStoptRectY(),
                 Brush.getPen());
     }
