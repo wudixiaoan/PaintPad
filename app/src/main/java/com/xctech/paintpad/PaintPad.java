@@ -5,11 +5,13 @@ package com.xctech.paintpad;
  */
 
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.net.Uri;
 import android.os.Environment;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -77,10 +79,13 @@ public class PaintPad extends View {
         //Bitmap bgBitmap = BitmapFactory.decodeResource(getContext().getResources(), R.drawable.screenshot).copy(Bitmap.Config.ARGB_8888, true);
         //mBitmap = Bitmap.createBitmap(bgBitmap, 0, 0, screenInfo.getWidthPixels(), screenInfo.getHeightPixels());
         /*
-        * mCanvas 提供给手指滑动的画布
+        * mCanvas ??????????
         * */
-        mCanvas = new Canvas(this.mBitmap);
-        mCanvas.drawColor(Color.TRANSPARENT);
+        if (this.mBitmap != null) {
+            mCanvas = new Canvas(this.mBitmap);
+            mCanvas.drawColor(Color.TRANSPARENT);
+            BitmapUtil.storeTmpPic(BitmapUtil.STORE_ID, BitmapUtil.STORE_KEY + "_origin", mBitmap, getContext());
+        }
     }
 
     @Override
@@ -90,17 +95,19 @@ public class PaintPad extends View {
         // Draw the bitmap
         //canvas.drawBitmap(mBitmap, 0, 0, new Paint(Paint.DITHER_FLAG));
         /*
-        * canvas 显示变化的画布
+        * canvas ???????
         * */
-        canvas.drawBitmap(mBitmap, null, mImageRect, new Paint(Paint.DITHER_FLAG));
-        // Call the drawing's draw() method.
-        if (mDrawing != null && this.isMoving == true) {
-            if (mMode == DrawingId.DRAWING_PATHLINE) {
-                mDrawing.draw(mCanvas);
-            } else {
-                mDrawing.draw(canvas);
+        if (mBitmap != null) {
+            canvas.drawBitmap(mBitmap, null, mImageRect, new Paint(Paint.DITHER_FLAG));
+            // Call the drawing's draw() method.
+            if (mDrawing != null && this.isMoving == true) {
+                if (mMode == DrawingId.DRAWING_PATHLINE) {
+                    mDrawing.draw(mCanvas);
+                } else {
+                    mDrawing.draw(canvas);
+                }
+                //mDrawing.pathDraw(canvas, mImageRect, mImageHeight, mImageWidth);
             }
-            //mDrawing.pathDraw(canvas, mImageRect, mImageHeight, mImageWidth);
         }
     }
 
@@ -234,6 +241,14 @@ public class PaintPad extends View {
      */
     public void clearCanvas() {
         //this.mCanvas.drawColor(getResources().getColor(R.color.color_default_bg));
+        BitmapUtil.deleteTmpFile(BitmapUtil.STORE_ID, BitmapUtil.STORE_KEY, mContext);
+        Bitmap bitmap = BitmapUtil.getStoreTmpPic(BitmapUtil.STORE_ID, BitmapUtil.STORE_KEY + "_origin", mContext);
+        if (bitmap != null) {
+            mBitmap = bitmap.copy(Bitmap.Config.ARGB_8888, true);
+            setSrcPath("/data/data/com.xctech.paintpad/files/tmp_key_origin");
+            mCanvas = new Canvas(this.mBitmap);
+            mCanvas.drawColor(Color.TRANSPARENT);
+        }
         this.reDraw();
     }
 
@@ -270,6 +285,7 @@ public class PaintPad extends View {
             Toast.makeText(this.mContext,
                     getResources().getString(R.string.tip_save_to) + fullPath,
                     Toast.LENGTH_LONG).show();
+            getContext().sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.fromFile(new File(fullPath))));
             mBitmap.compress(Bitmap.CompressFormat.PNG, 100,
                     new FileOutputStream(fullPath));
         } catch (FileNotFoundException e) {
@@ -293,7 +309,6 @@ public class PaintPad extends View {
     public void setSrcPath(String absPath) {
         File file = new File(absPath);
         if (file == null || !file.exists()) {
-            Log.w("xxxx", "invalid file path " + absPath);
             return;
         }
         reset();
@@ -339,46 +354,39 @@ public class PaintPad extends View {
         mImageRect.set(imageLeft, imageTop, imageRight, imageBottom);
     }
 
-    private String STORE_ID = "tmp";
-    private String STORE_KEY = "key";
-
-    @Override
-    protected void onWindowVisibilityChanged(int visibility) {
-        super.onWindowVisibilityChanged(visibility);;
-    }
-
-    @Override
-    protected void onAttachedToWindow() {
-        super.onAttachedToWindow();
-        Log.i("xxxx", "==== onAttachedToWindow ");
-    }
-
-    @Override
-    protected void onDetachedFromWindow() {
-        super.onDetachedFromWindow();
-        Log.i("xxxx", "==== onDetachedFromWindow ");
-    }
-
     @Override
     public void setVisibility(int visibility) {
         super.setVisibility(visibility);
-        Log.i("xxxx", "==== visibility = " + visibility);
         if (visibility == VISIBLE) {
-            Bitmap bitmap = BitmapUtil.getStoreTmpPic(STORE_ID, STORE_KEY, mContext);
-            Log.i("xxxx","visibility = " + visibility + "; b = " + (bitmap != null));
-            if(bitmap != null){
-                //mBitmap = bitmap.copy(Bitmap.Config.ARGB_8888, true);
+            Bitmap bitmap = BitmapUtil.getStoreTmpPic(BitmapUtil.STORE_ID, BitmapUtil.STORE_KEY, mContext);
+            if (bitmap != null) {
+                mBitmap = bitmap.copy(Bitmap.Config.ARGB_8888, true);
                 setSrcPath("/data/data/com.xctech.paintpad/files/tmp_key");
+                mCanvas = new Canvas(this.mBitmap);
+                mCanvas.drawColor(Color.TRANSPARENT);
+            } else {
+                clearCanvas();
             }
         } else if (visibility == GONE) {
-            BitmapUtil.storeTmpPic(STORE_ID, STORE_KEY, mBitmap, mContext);
+            BitmapUtil.storeTmpPic(BitmapUtil.STORE_ID, BitmapUtil.STORE_KEY, mBitmap, mContext);
         }
     }
+
     public boolean reset() {
         if (mBitmap != null) {
             mBitmap.recycle();
             mBitmap = null;
         }
+        if (mCanvas != null) {
+            mCanvas = null;
+        }
         return true;
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        Log.i("xxxx", "paint onDetachedFromWindow");
+        reset();
     }
 }

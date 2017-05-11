@@ -25,8 +25,8 @@ public class Arrow extends Drawing {
     }
 
     public void drawAL(Canvas canvas, float fx, float fy, float sx, float sy, Brush brush) {
-        double H = 8;
-        double L = 3.5;
+        double H = 16;
+        double L = 5;
         int x3 = 0;
         int y3 = 0;
         int x4 = 0;

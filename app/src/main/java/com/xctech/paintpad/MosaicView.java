@@ -1,6 +1,7 @@
 package com.xctech.paintpad;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -12,19 +13,26 @@ import android.graphics.Point;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
+import android.net.Uri;
+import android.os.Environment;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.MotionEvent;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
 import com.xctech.paintpad.tools.BitmapUtil;
 import com.xctech.paintpad.tools.Brush;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -380,7 +388,8 @@ public class MosaicView extends ViewGroup {
         return true;
     }
 
-    public boolean save() {
+    public boolean save(String path) throws FileNotFoundException {
+        Log.i("xxxx", "mosaic save");
         if (/*mTouchRects.isEmpty() || */bmMosaicLayer == null) {
             return false;
         }
@@ -393,7 +402,7 @@ public class MosaicView extends ViewGroup {
         canvas.save();
 
         try {
-            FileOutputStream fos = new FileOutputStream(outPath);
+            FileOutputStream fos = new FileOutputStream(path);
             bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fos);
             fos.flush();
             fos.close();
@@ -662,24 +671,86 @@ public class MosaicView extends ViewGroup {
     }
 
 
-    private String STORE_ID = "tmp";
-    private String STORE_KEY = "key";
-
     @Override
     public void setVisibility(int visibility) {
         super.setVisibility(visibility);
         Log.i("xxxx", "---- visibility = " + visibility);
         if (visibility == VISIBLE) {
-            Bitmap bitmap = BitmapUtil.getStoreTmpPic(STORE_ID, STORE_KEY, getContext());
+            Bitmap bitmap = BitmapUtil.getStoreTmpPic(BitmapUtil.STORE_ID, BitmapUtil.STORE_KEY, getContext());
             Log.i("xxxx", "visibility = " + visibility + "; m = " + (bitmap != null));
             if (bitmap != null) {
                 //bmBaseLayer = bitmap.copy(Bitmap.Config.ARGB_8888, true);
                 setSrcPath("/data/data/com.xctech.paintpad/files/tmp_key");
+            } else {
+                clearCanvas();
             }
         } else if (visibility == GONE) {
-            save();
-
+            try {
+                save(outPath);
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            }
+            reset();
         }
+    }
+
+    public void saveToSdcard() {
+        File sdcard_path = Environment.getExternalStorageDirectory();
+        String myFloder = "DCIM";/*getResources().getString(
+                R.string.folder_name_in_sdcard);*/
+        File paintpad = new File(sdcard_path + "/" + myFloder + "/");
+        try {
+            if (!paintpad.exists()) {
+                paintpad.mkdirs();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        // Set format
+        SimpleDateFormat format = new SimpleDateFormat("yyyy.MM.dd_HH.mm.ss");
+
+        // Get date
+        Date date = Calendar.getInstance().getTime();
+
+        // Get formatted time stamp
+        String timeStamp = format.format(date);
+
+        String suffixName = ".png";
+
+        String fullPath = "";
+        fullPath = sdcard_path + "/" + myFloder + "/" + timeStamp + suffixName;
+        try {
+            Toast.makeText(getContext(),
+                    getResources().getString(R.string.tip_save_to) + fullPath,
+                    Toast.LENGTH_LONG).show();
+            save(fullPath);
+            getContext().sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.fromFile(new File(fullPath))));
+        } catch (FileNotFoundException e) {
+            Toast.makeText(
+                    getContext(),
+                    getResources().getString(R.string.tip_sava_failed)
+                            + fullPath, Toast.LENGTH_LONG).show();
+            e.printStackTrace();
+        }
+    }
+
+    public void clearCanvas() {
+        BitmapUtil.deleteTmpFile(BitmapUtil.STORE_ID, BitmapUtil.STORE_KEY, getContext());
+        Bitmap bitmap = BitmapUtil.getStoreTmpPic(BitmapUtil.STORE_ID, BitmapUtil.STORE_KEY + "_origin", getContext());
+        if (bitmap != null) {
+            if (bitmap != null) {
+                setSrcPath("/data/data/com.xctech.paintpad/files/tmp_key_origin");
+            }
+        }
+        invalidate();
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        Log.i("xxxx", "mosaic onDetachedFromWindow");
+        reset();
     }
 }
 

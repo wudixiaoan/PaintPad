@@ -5,9 +5,12 @@
     android:layout_height="match_parent">
     <Button
         android:id="@+id/drop"
-        android:layout_width="wrap_content"
+        android:layout_width="80dp"
         android:layout_height="wrap_content"
         android:text="@string/drop"
+
+        android:background="@drawable/bg_button_color"
+        android:textColor="@color/bg_button_text"
         android:layout_alignParentLeft="true"/>
     <LinearLayout
         android:layout_width="wrap_content"
@@ -19,12 +22,14 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:visibility="gone"
             android:background="@drawable/ic_undo"/>
         <Button
             android:id="@+id/redo"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:visibility="gone"
             android:background="@drawable/ic_redo"/>
     </LinearLayout>
     <Button
@@ -32,5 +37,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/save"
+        android:background="@drawable/bg_button_color"
+        android:textColor="@color/bg_button_text"
         android:layout_alignParentRight="true"/>
 </RelativeLayout>

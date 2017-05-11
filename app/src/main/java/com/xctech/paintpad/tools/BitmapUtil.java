@@ -4,12 +4,17 @@ package com.xctech.paintpad.tools;
  * Created by an.pan on 2017/5/9.
  */
 
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.res.Resources;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.Config;
 import android.graphics.BitmapFactory;
 import android.graphics.BitmapFactory.Options;
+import android.net.Uri;
+import android.provider.MediaStore;
+import android.util.Log;
 import android.util.TypedValue;
 
 import java.io.FileInputStream;
@@ -18,6 +23,10 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 
 public class BitmapUtil {
+
+    public static final String STORE_ID = "tmp";
+    public static final String STORE_KEY = "key";
+
     public static class Size {
         public int width;
         public int height;
@@ -120,14 +129,16 @@ public class BitmapUtil {
     }
 
     public static void storeTmpPic(String tabid, String key, Bitmap bitmap, Context context) {
+        Log.i("xxxx","bitmap storeTmpPic");
         if (tabid == null || key == null || tabid.isEmpty() || key.isEmpty() || bitmap == null) {
             return;
         }
         FileOutputStream fos = null;
         try {
-            fos = context.openFileOutput(tabid + "_" + key , Context.MODE_PRIVATE);
+            fos = context.openFileOutput(tabid + "_" + key, Context.MODE_PRIVATE);
             bitmap.compress(Bitmap.CompressFormat.PNG, 100, fos);
         } catch (FileNotFoundException e) {
+            Log.i("xxxx",e.toString());
         } finally {
             if (fos != null) {
                 try {
@@ -140,6 +151,7 @@ public class BitmapUtil {
     }
 
     public static Bitmap getStoreTmpPic(String tabid, String key, Context context) {
+        Log.i("xxxx","bitmap getStoreTmpPic");
         if (tabid == null || key == null || tabid.isEmpty() || key.isEmpty()) {
             return null;
         }
@@ -151,6 +163,33 @@ public class BitmapUtil {
         } catch (FileNotFoundException e) {
         }
         return bitmap;
+    }
+
+    public static boolean deleteTmpFile(String tabid, String key,Context context) {
+        return context.deleteFile(tabid + "_" + key);
+    }
+
+    public static String getRealFilePath( final Context context, final Uri uri ) {
+        if ( null == uri ) return null;
+        final String scheme = uri.getScheme();
+        String data = null;
+        if ( scheme == null )
+            data = uri.getPath();
+        else if ( ContentResolver.SCHEME_FILE.equals( scheme ) ) {
+            data = uri.getPath();
+        } else if ( ContentResolver.SCHEME_CONTENT.equals( scheme ) ) {
+            Cursor cursor = context.getContentResolver().query( uri, new String[] { MediaStore.Images.ImageColumns.DATA }, null, null, null );
+            if ( null != cursor ) {
+                if ( cursor.moveToFirst() ) {
+                    int index = cursor.getColumnIndex( MediaStore.Images.ImageColumns.DATA );
+                    if ( index > -1 ) {
+                        data = cursor.getString( index );
+                    }
+                }
+                cursor.close();
+            }
+        }
+        return data;
     }
 }
 
