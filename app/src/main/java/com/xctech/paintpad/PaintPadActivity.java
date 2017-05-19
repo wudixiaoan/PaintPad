@@ -7,6 +7,7 @@ import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
@@ -42,6 +43,7 @@ public class PaintPadActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_paint_pad);
+        Log.i("xxxx","onCreate");
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             int i = ContextCompat.checkSelfPermission(this, permissions[0]);
             if (i != PackageManager.PERMISSION_GRANTED) {
@@ -62,13 +64,21 @@ public class PaintPadActivity extends Activity {
         btnUndo.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // mPaintPad.undo();
+                if (isPaint) {
+                    mPaintPad.undoPaintPad();
+                }else{
+                    mMosaicView.undoPaintPad();
+                }
             }
         });
         btnRedo.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // mPaintPad.redo();
+                if (isPaint) {
+                    mPaintPad.redoPaintPad();
+                }else{
+                    mMosaicView.redoPaintPad();
+                }
             }
         });
 
@@ -182,7 +192,7 @@ public class PaintPadActivity extends Activity {
         mDrawingFactory = new DrawingFactory();
         mDrawing = mDrawingFactory.createDrawing(DrawingId.DRAWING_PATHLINE);
         mPaintPad.setDrawing(mDrawing, DrawingId.DRAWING_PATHLINE);
-        //mPaintPad.setSrcPath(Environment.getExternalStorageDirectory() + "/Screenshot.png");
+        mPaintPad.setSrcPath(Environment.getExternalStorageDirectory() + "/Screenshot.png");
         resetBrush();
         setBrushSize(Brush.PAINT_SIZE_SMALL);
         setBrushColor(getResources().getColor(R.color.paint_color1));
@@ -224,6 +234,8 @@ public class PaintPadActivity extends Activity {
         super.onDestroy();
         BitmapUtil.deleteTmpFile(BitmapUtil.STORE_ID, BitmapUtil.STORE_KEY, this);
         BitmapUtil.deleteTmpFile(BitmapUtil.STORE_ID, BitmapUtil.STORE_KEY + "_origin", this);
+        UndoStack.clearStack();
+        RedoStack.clearStack();
     }
 
     private void initData() {

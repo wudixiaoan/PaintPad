@@ -22,6 +22,7 @@ import android.view.MotionEvent;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
+import com.xctech.paintpad.drawings.DrawingId;
 import com.xctech.paintpad.tools.BitmapUtil;
 import com.xctech.paintpad.tools.Brush;
 
@@ -34,6 +35,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.Stack;
 
 /**
  * Created by an.pan on 2017/5/9.
@@ -45,7 +47,8 @@ public class MosaicView extends ViewGroup {
         GRID, COLOR, BLUR,
     }
 
-    ;
+    private Stack<BitmapStack> mUndoStack = UndoStack.getInstanc();
+    private Stack<BitmapStack> mRedoStack = RedoStack.getInstanc();
 
     public static enum Mode {
         GRID, PATH, NORMAL
@@ -389,16 +392,13 @@ public class MosaicView extends ViewGroup {
     }
 
     public boolean save(String path) throws FileNotFoundException {
-        Log.i("xxxx", "mosaic save");
-        if (/*mTouchRects.isEmpty() || */bmMosaicLayer == null) {
-            return false;
-        }
-
         Bitmap bitmap = Bitmap.createBitmap(mImageWidth, mImageHeight,
                 Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(bitmap);
         canvas.drawBitmap(bmBaseLayer, 0, 0, null);
-        canvas.drawBitmap(bmMosaicLayer, 0, 0, null);
+        if(bmMosaicLayer != null) {
+            canvas.drawBitmap(bmMosaicLayer, 0, 0, null);
+        }
         canvas.save();
 
         try {
@@ -486,6 +486,20 @@ public class MosaicView extends ViewGroup {
         y = (int) ((y - mImageRect.top) / ratio);
 
         if (action == MotionEvent.ACTION_DOWN) {
+            Bitmap bitmap = Bitmap.createBitmap(mImageWidth, mImageHeight,
+                    Bitmap.Config.ARGB_8888);
+            Canvas canvas = new Canvas(bitmap);
+            if (bmBaseLayer != null) {
+                canvas.drawBitmap(bmBaseLayer, 0, 0, null);
+            }
+            if (bmMosaicLayer != null) {
+                canvas.drawBitmap(bmMosaicLayer, 0, 0, null);
+            }
+            canvas.save();
+            mUndoStack.push(new BitmapStack(DrawingId.DRAWING_PATHMOSAIC, bitmap.copy(Bitmap.Config.ARGB_8888, true)));
+            RedoStack.clearStack();
+            mRedoStack = RedoStack.getInstanc();
+            Log.i("xxxx", "mosaic push length = " + mUndoStack.size() + "; --" + mRedoStack.size());
             mTouchPath = new Path();
             mTouchPath.moveTo(x, y);
             if (mMosaic) {
@@ -674,10 +688,8 @@ public class MosaicView extends ViewGroup {
     @Override
     public void setVisibility(int visibility) {
         super.setVisibility(visibility);
-        Log.i("xxxx", "---- visibility = " + visibility);
         if (visibility == VISIBLE) {
             Bitmap bitmap = BitmapUtil.getStoreTmpPic(BitmapUtil.STORE_ID, BitmapUtil.STORE_KEY, getContext());
-            Log.i("xxxx", "visibility = " + visibility + "; m = " + (bitmap != null));
             if (bitmap != null) {
                 //bmBaseLayer = bitmap.copy(Bitmap.Config.ARGB_8888, true);
                 setSrcPath("/data/data/com.xctech.paintpad/files/tmp_key");
@@ -749,8 +761,54 @@ public class MosaicView extends ViewGroup {
     @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
-        Log.i("xxxx", "mosaic onDetachedFromWindow");
         reset();
+    }
+
+
+    public void undoPaintPad() {
+        if (!mUndoStack.isEmpty()) {
+
+            Bitmap bitmap = Bitmap.createBitmap(mImageWidth, mImageHeight,
+                    Bitmap.Config.ARGB_8888);
+            Canvas canvas = new Canvas(bitmap);
+            if (bmBaseLayer != null) {
+                canvas.drawBitmap(bmBaseLayer, 0, 0, null);
+            }
+            if (bmMosaicLayer != null) {
+                canvas.drawBitmap(bmMosaicLayer, 0, 0, null);
+            }
+            canvas.save();
+            mRedoStack.push(new BitmapStack(DrawingId.DRAWING_PATHMOSAIC, bitmap.copy(Bitmap.Config.ARGB_8888, true)));
+            BitmapStack stack = mUndoStack.pop();
+            Bitmap tmp = stack.getDrawBitmap();
+            Log.i("xxxx", "mosaic undo size = " + mUndoStack.size() + ";redo size  = " + mRedoStack.size() + ";bitmap = " + tmp + ";mode = " + stack.getDrawMode());
+            setCurrentBitmap(tmp);
+        }
+    }
+
+    public void redoPaintPad() {
+        if (!mRedoStack.isEmpty()) {
+            mUndoStack.push(new BitmapStack(DrawingId.DRAWING_PATHMOSAIC, bmBaseLayer.copy(Bitmap.Config.ARGB_8888, true)));
+            BitmapStack stack = mRedoStack.pop();
+            Bitmap tmp = stack.getDrawBitmap();
+            Log.i("xxxx", "mosaic redo size  = " + mRedoStack.size() + ";undo size = " + mUndoStack.size() + ";bitmap = " + tmp + ";mode = " + stack.getDrawMode());
+            setCurrentBitmap(tmp);
+        }
+    }
+
+    private void setCurrentBitmap(Bitmap bitmap) {
+        reset();
+        if (bitmap == null || bitmap.isRecycled())
+            return;
+        if (bmBaseLayer != null && bmBaseLayer != bitmap) {
+            bmBaseLayer.recycle();
+        }
+        bmBaseLayer = bitmap;
+        bmCoverLayer = getCoverLayer();
+        bmMosaicLayer = null;
+        updatePathMosaic();
+        requestLayout();
+        invalidate();
     }
 }
 

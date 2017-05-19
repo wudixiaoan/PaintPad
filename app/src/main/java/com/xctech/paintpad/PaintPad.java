@@ -30,6 +30,7 @@ import java.io.FileOutputStream;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Stack;
 
 /**
  * This is our main View class.
@@ -42,6 +43,8 @@ public class PaintPad extends View {
     private Drawing mDrawing = null;
     private int bgColor;
 
+    private Stack<BitmapStack> mUndoStack = UndoStack.getInstanc();
+    private Stack<BitmapStack> mRedoStack = RedoStack.getInstanc();
     private Context mContext;
     private static int mMode = DrawingId.DRAWING_PATHLINE;
 
@@ -208,6 +211,12 @@ public class PaintPad extends View {
             Brush.ratioBrushSize(mImageRect, mImageWidth);
         }
         mDrawing.fingerDownWithRatio(x, y, mCanvas, mImageRect, mImageWidth);
+
+        BitmapStack stack = new BitmapStack(mMode, mBitmap.copy(Bitmap.Config.ARGB_8888, true));
+        mUndoStack.push(stack);
+        RedoStack.clearStack();
+        mRedoStack = RedoStack.getInstanc();
+        Log.i("xxxx","push length = " + mUndoStack.size());
     }
 
     /**
@@ -388,5 +397,38 @@ public class PaintPad extends View {
         super.onDetachedFromWindow();
         Log.i("xxxx", "paint onDetachedFromWindow");
         reset();
+    }
+
+    public void undoPaintPad() {
+        if (!mUndoStack.isEmpty()) {
+            BitmapStack stack = mUndoStack.pop();
+            Bitmap bitmap = stack.getDrawBitmap();
+            mRedoStack.push(new BitmapStack(mMode, mBitmap.copy(Bitmap.Config.ARGB_8888, true)));
+            Log.i("xxxx", "undo size = " + mUndoStack.size() + ";bitmap = " + bitmap + ";mode = " + stack.getDrawMode());
+            setCurrentBitmap(bitmap);
+        }
+    }
+
+    public void redoPaintPad() {
+        if (!mRedoStack.isEmpty()) {
+            BitmapStack stack = mRedoStack.pop();
+            Bitmap bitmap = stack.getDrawBitmap();
+            mUndoStack.push(new BitmapStack(mMode, mBitmap.copy(Bitmap.Config.ARGB_8888, true)));
+            Log.i("xxxx", "redo size  = " + mRedoStack.size() + ";bitmap = " + bitmap+ ";mode = " + stack.getDrawMode());
+            setCurrentBitmap(bitmap);
+        }
+    }
+
+    private void setCurrentBitmap(Bitmap bitmap) {
+        reset();
+        if (bitmap == null || bitmap.isRecycled())
+            return;
+        if (mBitmap != null && mBitmap != bitmap) {
+            mBitmap.recycle();
+        }
+        mBitmap = bitmap;
+        mCanvas = new Canvas(this.mBitmap);
+        requestLayout();
+        invalidate();
     }
 }
